@@ -5,7 +5,8 @@
 
 ### SETUP: RUN THIS BEFORE STARTING ----------
 
-install.packages("rvest")
+# install rvest if needed
+# install.packages("rvest")
 
 #Load packages
 library(tidyverse)
@@ -172,6 +173,18 @@ rs_joined <- rs_joined %>%
 
 #ANSWER
 
+# add Decade to rs_joined, add an s to the decade, and convert to factor
+rs_joined <- rs_joined %>%
+  mutate(Decade_New = factor(paste0(floor(Year_New/10)*10, 's')),
+         Decade_Old = factor(paste0(floor(Year_Old/10)*10, 's'))
+  )
+
+# get the mean rank change for each decade
+mean_rank_change <- rs_joined %>%
+  group_by(Decade_Old) %>%
+  summarise(Mean_Rank_Change = mean(Rank_Change, ra.rm = T))
+
+# the 1990s did the best on average, though it was essentially the same as the 1980s
 
 
 ### Question 7 ----------
@@ -183,6 +196,15 @@ rs_joined <- rs_joined %>%
 
 #ANSWER
 
+# number of songs in each decade
+songs_per_decade <- fct_count(rs_joined$Decade_Old)
+
+# lump into 3 decades plus other
+lumped_songs_per_decade <- fct_lump(rs_joined$Decade_Old, 3)
+
+# get proportion of songs in each decade, lumped
+prop_lumped_songs_per_decade <- fct_count(lumped_songs_per_decade, prop = T)
+
 
 
 ### Question 8 ---------- 
@@ -192,6 +214,13 @@ rs_joined <- rs_joined %>%
 # Use parse_date_time to fix it
 
 #ANSWER
+
+# load data
+top20 <- read_csv('top_20.csv')
+
+# change date format
+top20 <- top20 %>%
+  mutate(Release = parse_date_time(Release, orders = 'dmy'))
 
 
 ### Question 9 --------
