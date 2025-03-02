@@ -1,5 +1,5 @@
 #PSYC 259 Homework 3 - Data Structure
-#For full credit, provide answers for at least 8/11 questions
+#For full credit, provide answers for at least 8/11 questions (8/11)
 
 #List names of students collaborating with: 
 
@@ -76,6 +76,8 @@ rs_old <- rs_old %>%
 # Join the datasets
 rs_all <- bind_rows(rs_old, rs_new)
 
+#Mcomment: Looks good - you could also nest the mutate functions together for rs_old
+rs_old <- rs_old %>% mutate(Rank = as.integer(Rank), Year = as.integer(Year), Source = "Old")
 
 ### Question 3 ----------
 
@@ -132,6 +134,9 @@ rs_old_b <- rs_all %>%
 suffixes <- c(rs_new_b$Source[1], rs_old_b$Source[1])
 suffixes <- paste0('_', suffixes)
 
+#Mcomment: The key has the suffix instructions in the join command, but this works too
+rs_joined <- full_join(temp_old, temp_new, by = c("Artist", "Song"), suffix = c("_Old","_New"))
+
 # Join the new versions of the data frames
 rs_joined <- full_join(rs_new_b, rs_old_b, by = c('Artist', 'Song'), suffix = suffixes)
 
@@ -162,6 +167,12 @@ rs_joined <- rs_joined %>%
 rs_joined <- rs_joined %>%
   mutate(Rank_Change = Rank_Old - Rank_New)
 
+#Mcomment: Looks good, see some alternatives below - 
+rs_joined <- rs_joined %>% 
+  select(-starts_with("Source")) %>% 
+  filter(!is.na(Rank_New), !is.na(Rank_Old)) %>% 
+  mutate(Rank_Change = Rank_Old - Rank_New) %>% 
+  arrange(Rank_Change)
 
 ### Question 6 ----------
 
@@ -205,6 +216,8 @@ lumped_songs_per_decade <- fct_lump(rs_joined$Decade_Old, 3)
 # get proportion of songs in each decade, lumped
 prop_lumped_songs_per_decade <- fct_count(lumped_songs_per_decade, prop = T)
 
+#Mcomment: You can also nest the functions
+fct_count(fct_lump(rs_joined$Decade, 3), prop = T)
 
 
 ### Question 8 ---------- 
@@ -231,6 +244,8 @@ top20 <- top20 %>%
 
 #ANSWER
 
+#Key
+top20 <- top20 %>% pivot_wider(names_from = "Style", values_from = "Value")
 
 
 ### Question 10 ---------
@@ -245,7 +260,15 @@ top20 <- top20 %>%
 
 #ANSWER
 
-
+#Key
+top20 <- left_join(top20, rs_joined, by = c("Artist","Song"))
+top20 <- top20 %>% mutate(Release_Month = month(Release_Date, label = T),
+                          Season = fct_collapse(Release_Month,
+                                                Winter = c("Dec", "Jan","Feb"),
+                                                Spring = c("Mar","Apr","May"),
+                                                Summer = c("Jun", "Jul","Aug"),
+                                                Fall = c("Sep", "Oct", "Nov")))
+fct_count(top20$Season)
 
 ### Question 11 ---------
 
@@ -256,5 +279,7 @@ top20 <- top20 %>%
 
 #ANSWER
 
-
+#Key
+top20 <- top20 %>% mutate(Quality = factor(ifelse(str_detect(Key, "m"), "Minor", "Major")))
+top20 %>% filter(Quality == "Minor") %>% slice_min(Rank_New)
 
